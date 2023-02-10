@@ -63,7 +63,7 @@ export async function putCustomer(req, res) {
         await db.query('UPDATE customers SET phone = $1 WHERE id = $2;', [phone, id]);
         await db.query('UPDATE customers SET cpf = $1 WHERE id = $2;', [cpf, id]);
         await db.query('UPDATE customers SET birthday = $1 WHERE id = $2;', [birthday, id]);
-        res.sendStatus(201);
+        res.sendStatus(200);
     } catch (err) {
         res.status(500).send(err);
     }
