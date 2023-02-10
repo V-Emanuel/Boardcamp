@@ -18,7 +18,7 @@ export async function postGames(req, res) {
     const nameExists = await db.query('SELECT * FROM games WHERE name = $1;', [name]);
     if (nameExists.rows[0]) return res.sendStatus(409).send("Game already exists")
     try {
-        await db.query("INSERT INTO games (name, image, stockTotal, pricePerDay) VALUES ($1, $2, $3, $4);",
+        await db.query('INSERT INTO games (name, image, "stockTotal", "pricePerDay") VALUES ($1, $2, $3, $4);',
             [name, image, stockTotal, pricePerDay]);
         res.sendStatus(201);
     } catch (err) {
