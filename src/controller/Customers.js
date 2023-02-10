@@ -37,7 +37,7 @@ export async function postCustomers(req, res) {
     }
     try {
         await db.query("INSERT INTO customers (name, phone, cpf, birthday) VALUES ($1, $2, $3, $4);",
-            [name, phone, cpf, birthday.format('YYYY-MM-DD')]);
+            [name, phone, cpf, birthday]);
         res.sendStatus(201);
     } catch (err) {
         res.status(500).send(err);
@@ -59,10 +59,10 @@ export async function putCustomer(req, res) {
         return res.sendStatus(409);
     }
     try {
-        await db.query('UPDATE customers SET name = $1 WHERE id = $2;',[name, id ]);
-        await db.query('UPDATE customers SET phone = $1 WHERE id = $2;',[phone, id ]);
-        await db.query('UPDATE customers SET cpf = $1 WHERE id = $2;',[cpf, id ]);
-        await db.query('UPDATE customers SET birthday = $1 WHERE id = $2;',[birthday, id ]);
+        await db.query('UPDATE customers SET name = $1 WHERE id = $2;', [name, id]);
+        await db.query('UPDATE customers SET phone = $1 WHERE id = $2;', [phone, id]);
+        await db.query('UPDATE customers SET cpf = $1 WHERE id = $2;', [cpf, id]);
+        await db.query('UPDATE customers SET birthday = $1 WHERE id = $2;', [birthday, id]);
         res.sendStatus(201);
     } catch (err) {
         res.status(500).send(err);
