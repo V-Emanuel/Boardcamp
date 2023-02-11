@@ -63,9 +63,9 @@ export async function postRentals(req, res) {
 
     try {
         await db.query('UPDATE games SET "stockTotal" = $1 WHERE id = $2;', [game.rows[0].stockTotal - 1, gameId])
-        await db.query('INSERT INTO rentals' +
-            ' ("customerId", "gameId", "rentDate","daysRented", "returnDate", "originalPrice", "delayFee")' +
-            ' VALUES ($1, $2, $3, $4, $5, $6, $7);',
+        await db.query(I`NSERT INTO rentals
+            ("customerId", "gameId", "rentDate","daysRented", "returnDate", "originalPrice", "delayFee")
+            VALUES ($1, $2, $3, $4, $5, $6, $7);`,
             [customerId, gameId, rentDate, daysRented, returnDate, originalPrice, delayFee]);
         res.sendStatus(201)
     } catch (err) {
@@ -76,11 +76,11 @@ export async function postRentals(req, res) {
 export async function finalizedRental(req, res) {
     const { id } = req.params;
 
-    const rental = await db.query('SELECT * FROM rentals WHERE id = $1', [id]);
+    const rental = await db.query('SELECT * FROM rentals WHERE id = $1;', [id]);
     if (!rental.rows[0]) return res.sendStatus(404);
     if (rental.rows[0].returnDate != null) return res.sendStatus(400)
 
-    const game = await db.query('SELECT * FROM games WHERE id = $1', [rental.rows[0].gameId])
+    const game = await db.query('SELECT * FROM games WHERE id = $1;', [rental.rows[0].gameId])
 
     function addDays(date, days) {
         var result = new Date(date);
@@ -102,7 +102,25 @@ export async function finalizedRental(req, res) {
         await db.query('UPDATE rentals SET "returnDate" = $1 WHERE id = $2;', [returnDateFinal, id]);
         await db.query('UPDATE rentals SET "delayFee"= $1 WHERE id = $2;', [delayFeeNew, id]);
         res.sendStatus(200)
+        console.log(delayFeeNew)
     } catch (err) {
         res.status(500).send(err.message);
     }
+}
+
+export async function deleteRental(req, res) {
+    const { id } = req.params;
+
+    const rental = await db.query('SELECT * FROM rentals WHERE id = $1;', [id]);
+    if (!rental.rows[0]) return res.sendStatus(404);
+    if (rental.rows[0].returnDate == null) return res.sendStatus(400);
+
+    try {
+        await db.query('DELETE FROM rentals WHERE id = $1;', [id]);
+        res.sendStatus(200)
+
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+
 }
