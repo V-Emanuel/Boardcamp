@@ -45,12 +45,12 @@ export async function postRentals(req, res) {
     const { customerId, gameId, daysRented } = req.body;
 
     const customerExists = await db.query('SELECT * FROM customers WHERE id = $1;', [customerId]);
-    if (!customerExists) return res.sendStatus(400);
+    if (!customerExists.rows[0]) return res.sendStatus(400);
 
     const game = await db.query('SELECT * FROM games WHERE id = $1;', [gameId])
-    if (!game) return res.sendStatus(400);
+    if (!game.rows[0]) return res.sendStatus(400);
 
-    const validation = rentalSchema.validate({ daysRented }, { abortEarly: true });
+    const validation = rentalSchema.validate({ customerId, gameId, daysRented }, { abortEarly: true });
     if (validation.error) return res.sendStatus(400);
 
     const gameAvailable = game.rows[0].stockTotal;
@@ -77,23 +77,30 @@ export async function finalizedRental(req, res) {
     const { id } = req.params;
 
     const rental = await db.query('SELECT * FROM rentals WHERE id = $1', [id]);
-    if(!rental) return res.sendStatus(404);
-    if(rental.rows[0].returnDate == null) return res.sendStatus(400)
+    if (!rental.rows[0]) return res.sendStatus(404);
+    if (rental.rows[0].returnDate != null) return res.sendStatus(400)
 
     const game = await db.query('SELECT * FROM games WHERE id = $1', [rental.rows[0].gameId])
 
-    const rentDate = rental.rows[0].rentDate;
-    rental.rows[0].returnDate = dayjs().format('YYYY-MM-DD');
-    let returnDateCorrect =  rentDate.add(rental.rows[0].daysRented, 'day');
+    function addDays(date, days) {
+        var result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result.toISOString().substring(0, 10);
+    }
 
-    if(rental.rows[0].returnDate > returnDateCorrect){
-        let days = daysBetweenDates(rental.rows[0].returnDate, returnDateCorrect);
-        rental.rows[0].delayFee = days*game.rows[0].pricePerDay;
-    }else{
-        rental.rows[0].delayFee = 0;
+    let delayFeeNew = 0;
+    const rentDate = rental.rows[0].rentDate;
+    const returnDateFinal = dayjs().format('YYYY-MM-DD');
+    let returnDateCorrect = addDays(rentDate, rental.rows[0].daysRented);
+
+    if (returnDateFinal > returnDateCorrect) {
+        let days = daysBetweenDates(returnDateFinal, returnDateCorrect);
+        delayFeeNew = days * game.rows[0].pricePerDay;
     }
 
     try {
+        await db.query('UPDATE rentals SET "returnDate" = $1 WHERE id = $2;', [returnDateFinal, id]);
+        await db.query('UPDATE rentals SET "delayFee"= $1 WHERE id = $2;', [delayFeeNew, id]);
         res.sendStatus(200)
     } catch (err) {
         res.status(500).send(err.message);
