@@ -53,23 +53,8 @@ export async function postRentals(req, res) {
     const validation = rentalSchema.validate({ customerId, gameId, daysRented }, { abortEarly: true });
     if (validation.error) return res.sendStatus(400);
 
-   /* const gamesAvailable = await db.query('SELECT * FROM rentals WHERE "gameId" = $1;', [gameId])
-    const gameInStock = game.rows[0].stockTotal;
-    const gameAvailable =gamesAvailable.rows.length;
-    if(gameInStock <= gameAvailable) return res.sendStatus(400); */
-
-    const gamesRented = await db.query(
-        `SELECT * FROM rentals WHERE "gameId" = $1 AND "returnDate" IS NULL;`,
-        [gameId]
-      );
-  
-      const gameStock = game.rows[0].stockTotal + 2;
-      const gameRented = gamesRented.rows.length;
-  
-      const notInStock = gameStock <= gameRented;
-      if (notInStock) {
-        return res.status(400).send("Game not in stock!");
-      }
+    const gameAvailable = game.rows[0].stockTotal;
+    if (gameAvailable == 0) return res.sendStatus(400);
 
     const originalPrice = game.rows[0].pricePerDay * daysRented;
     const rentDate = dayjs().format('YYYY-MM-DD');

@@ -52,8 +52,8 @@ export async function putCustomer(req, res) {
         return res.sendStatus(400);
     }
     const existingCpf = await db.query(
-        'SELECT * FROM customers WHERE cpf = $1;',
-        [cpf]
+        'SELECT * FROM customers WHERE cpf = $1 AND id <> $2;',
+        [cpf, id]
     );
     if (existingCpf.rowCount > 0) {
         return res.sendStatus(409);
