@@ -53,8 +53,23 @@ export async function postRentals(req, res) {
     const validation = rentalSchema.validate({ customerId, gameId, daysRented }, { abortEarly: true });
     if (validation.error) return res.sendStatus(400);
 
-    const gameAvailable = game.rows[0].stockTotal;
-    if (gameAvailable == 0) return res.sendStatus(400);
+   /* const gamesAvailable = await db.query('SELECT * FROM rentals WHERE "gameId" = $1;', [gameId])
+    const gameInStock = game.rows[0].stockTotal;
+    const gameAvailable =gamesAvailable.rows.length;
+    if(gameInStock <= gameAvailable) return res.sendStatus(400); */
+
+    const gamesRented = await db.query(
+        `SELECT * FROM rentals WHERE "gameId" = $1 AND "returnDate" IS NULL;`,
+        [gameId]
+      );
+  
+      const gameStock = game.rows[0].stockTotal + 2;
+      const gameRented = gamesRented.rows.length;
+  
+      const notInStock = gameStock <= gameRented;
+      if (notInStock) {
+        return res.status(400).send("Game not in stock!");
+      }
 
     const originalPrice = game.rows[0].pricePerDay * daysRented;
     const rentDate = dayjs().format('YYYY-MM-DD');
@@ -87,6 +102,15 @@ export async function finalizedRental(req, res) {
         result.setDate(result.getDate() + days);
         return result.toISOString().substring(0, 10);
     }
+    function daysBetweenDates(date1, date2) {
+        // Convert the dates to timestamp values
+        const time1 = new Date(date1).getTime();
+        const time2 = new Date(date2).getTime();
+        // Subtract the timestamps
+        const diff = Math.abs(time2 - time1);
+        // Divide the difference by the number of milliseconds in a day
+        return diff / 86400000;
+    }
 
     let delayFeeNew = 0;
     const rentDate = rental.rows[0].rentDate;
@@ -101,8 +125,8 @@ export async function finalizedRental(req, res) {
     try {
         await db.query('UPDATE rentals SET "returnDate" = $1 WHERE id = $2;', [returnDateFinal, id]);
         await db.query('UPDATE rentals SET "delayFee"= $1 WHERE id = $2;', [delayFeeNew, id]);
+        await db.query('UPDATE games SET "stockTotal" = $1 WHERE id = $2', [game.rows[0].stockTotal + 1, rental.rows[0].gameId])
         res.sendStatus(200)
-        console.log(delayFeeNew)
     } catch (err) {
         res.status(500).send(err.message);
     }
