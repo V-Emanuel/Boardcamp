@@ -4,7 +4,7 @@ import rentalSchema from "../schema/RentalSchema.js";
 
 export async function getRentals(req, res) {
 
-    const rentals = await db.query(`SELECT rentals.*, customers.id, customers.name AS "customers",
+    const rentals = await db.query(`SELECT rentals.*, rentals.id AS rentals, customers.id, customers.name AS "customers",
         games.id, games.name AS "games"
         FROM rentals 
         JOIN customers 
@@ -15,7 +15,7 @@ export async function getRentals(req, res) {
     let rentalsArray = rentals.rows;
 
     const completeRental = rentalsArray.map(i => ({
-        id: i.id,
+        id: i.rentals,
         customerId: i.customerId,
         gameId: i.gameId,
         rentDate: i.rentDate,
@@ -63,7 +63,7 @@ export async function postRentals(req, res) {
 
     try {
         await db.query('UPDATE games SET "stockTotal" = $1 WHERE id = $2;', [game.rows[0].stockTotal - 1, gameId])
-        await db.query(I`NSERT INTO rentals
+        await db.query(`INSERT INTO rentals
             ("customerId", "gameId", "rentDate","daysRented", "returnDate", "originalPrice", "delayFee")
             VALUES ($1, $2, $3, $4, $5, $6, $7);`,
             [customerId, gameId, rentDate, daysRented, returnDate, originalPrice, delayFee]);
